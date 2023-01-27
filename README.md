@@ -2,6 +2,8 @@
 
 
 
+## 普通模式操作
+
 ### 移动操作
 
 | 快捷键                      | 含义                                                         |
@@ -13,12 +15,10 @@
 | `e`                         | move cursor to the end of the word                           |
 | `w`                         | move cursor to the begining of the next word                 |
 | `b`                         | move cursor to the begining of the previous word             |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-|                             |                                                              |
-
-
+| `zz`                        | finish                                                       |
+| `iw`                        | select whole word                                            |
+| `it`                        | select whole tags content, such as `<a>test test</a>` will switch `test test` |
+| `<number>G`                 | move cursor to number line                                   |
 
 ### 修改指令
 
@@ -38,9 +38,7 @@
 | `<C-a>`、`<C-x>` | 将当前数字加 number，将当前数字减 number，number 默认为1，默认找到当前行下一个顺位数字 |
 | `daw`            | 删除一个单词                                                 |
 | `dap`            | 删除一个段落                                                 |
-|                  |                                                              |
-
-
+| `R`              | enter insert model, press `ESC` to exist, advanced commands: `gR` |
 
 ### 操作符指令【后面需要跟随操作范围的修改指令】
 
@@ -48,18 +46,15 @@
 | ---------- | ------------------------------------------------------------ |
 | `c`        | 修改操作，从当前字符开始。如`c$`，执行修改【从当前字符删除到行尾所有字符并插入】操作 |
 | `d`        | 删除凑走                                                     |
-| `y`        | 复制到寄存器                                                 |
+| `y`        | 复制到寄存器，常见操作如：`yt,`，完成当前光标到字符`,``之前的复制 |
 | `g-`       | 大小写反转                                                   |
 | `>`        | 增加缩进                                                     |
 | `<`        | 减少缩进                                                     |
 | `=`        | 自动缩进【基于上一行缩进】                                   |
 | `gu`、`gU` | make text lower or upper case,`guaw`/`guap` operate a word or a graph |
+| `r`        | replace current character,advanced operation: `Vr-`使用-替换当前行 |
 
 **当一个操作符重复两次时，当前操作会用于当前行**，`gUgU`缩写成`gUU`，`>>`用于当前行锁进
-
-
-
-
 
 ### *等价复合操作总结*
 
@@ -74,10 +69,6 @@
 | `O`        | `ko`         | 在当前行前插入一个空行     |
 |            |              |                            |
 
-
-
-
-
 ### 可重复执行的操作
 
 | 命令                                       | 含义                                     | 重复 | 回退 |
@@ -88,13 +79,55 @@
 | `:s/source/target`                         | 完成行内字符串替换操作                   | `&`  | `u`  |
 | `:%s/source/target`                        | 替换所有的 %  range means the whole file |      |      |
 | `number <operation>`                       | 重复当前 operation number 次             |      |      |
-|                                            |                                          |      |      |
 
 
 
+## 插入模式操作
+
+| 快捷键            | 含义                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| `<C-w>`           | 删除前一个单词                                               |
+| `<C-h>`           | 删除前一个字符（等价于删除键）                               |
+| `<C-u>`           | 删除至行首，包含空格                                         |
+| `<C-[>`           | 同`ESC`，切换到普通模式                                      |
+| `<C-o>`           | 切换到插入-普通模式，该模式下执行一个命令后返回插入模式（与 macOS 快捷键有点冲突） |
+| `<C-r>{register}` | 完成寄存器的值的插入，最常见的如：`<C-r>0`完成对寄存器当中的值的插入，原理是copy寄存器每一个字符手动插入 |
 
 
 
+## 可视模式操作
+
+可视模式：允许选定一个区域然后在其上进行操作，`[区域][操作符]` 类似于 `[操作符][移动操作]`
+
+| 快捷键  | 含义                                                         |
+| ------- | ------------------------------------------------------------ |
+| `viw`   | select a word                                                |
+| `v`     | character oriented vision operation                          |
+| `V`     | row oriented vision operation                                |
+| `<C-v>` | column oriented vision operation                             |
+| `gv`    | re-select last range, if last range was deleted it work strange |
+| `o`     | change active side                                           |
+| `r-`    | replace selected all character with `-`                      |
+| `I`     | in view model, current insert character, `<C-r>3j``I`` #`    |
+| `I``A`  | add character to the begining or ending in the constituency, **normal `i` and `a` has other task** |
 
 
+
+## 命令行操作
+
+`ignore curosr`
+
+| 快捷键                                        | 含义                                                         |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| `:<number>[operation]`                        | jump cursor to number line and execute operation<br />addition<br /> `:$` jump to last line<br /> `:.` jump to current line<br />`%` jump to the whole file(all lines)<br />`0` virtual line, lay at top of the whole file |
+| `:<start>,<end>[operation]`                   | selected range and execute operation for this range, include start and end line |
+| `:/{start}/,/{end}/[operation]`               | selected the range of the words between start and end        |
+| `:/{start}{offset},/{end}{offset}[operation]` | setected the range of the words with offset, such as: `:/<html>+1/,/<html>-1/p` |
+| `v`,`V`,`<C-v>`                               | use selected model to select range                           |
+| `:<selected>p`                                | print number line content to button, p is abbrevation of word print |
+| `:<selected>d`                                | delete the specified number of line                          |
+| `:<selected>j`                                | join rows in a specified range                               |
+| `:<selected>s/{pattern}/{string}`             | replace parrent with string in a selected range<br />common: `:%s/pattern/string` |
+| `:<selected>t {address}`                      | copy selected content under to address, t means copt**To**<br /> `:6t.` copy line six and add to current next line<br />`:t0` copy current line to top of the whole file |
+| `:<selected>m {address}`                      | move selected content under to address<br />`:1m$` move line 1 to end <br />`:$m0` move last line to top |
 

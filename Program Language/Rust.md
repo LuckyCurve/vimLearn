@@ -1,6 +1,6 @@
 # Rust 编程语言
 
-
+最大特点：编译期检查、安全、高效
 
 ## 入门指南
 
@@ -377,6 +377,73 @@ fn first_world(source: &str) -> &str {
 字符串字面量就是切面，被存储到二进制程序中，直接以切片  `&str` 的方式来进行引用，正是由于 `&str`是不可变的，因此字符串字面量就是不可变的了。
 
 使用权，借用和切片的逻辑都是为了方便进行清除所有者离开了作用域的数据
+
+
+
+## 结构体
+
+Demo：
+
+```rust
+// 增加 Debug 打印 trait
+#[derive(Debug)]                                                                                       
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let rectangle = Rectangle {width: 30, height: 50};
+
+    println!("Rectangle info: {:?}", rectangle);
+
+    println!("Rectangle area is {}", area(&rectangle));
+}
+
+fn area(rectangle: &Rectangle) -> u32 {
+    rectangle.width * rectangle.height
+}
+```
+
+使用方法来将 area 归属到 struct 当中去
+
+> 函数和方法是两个类型的概念，方法被定义在结构体（枚举类型、Trait对象）的上下文中，并且他们的第一个参数永远是 `slef`，用于代指该方法的结构体实例
+>
+> > Java 中一切皆对象，静态方法更适合叫内联函数，其他的都是方法
+
+```rust
+#[derive(Debug)]                                                                                       
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+  	// 通常无需获得所有权，也无需修改
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }   
+
+    fn can_hold(&self, target: &Rectangle) -> bool {
+        self.width >= target.width && self.height >= target.height
+    }   
+}
+
+fn main() {
+    let rectangle = Rectangle {width: 30, height: 20};
+    let rectangle2 = Rectangle {width: 30, height: 20};
+
+    println!("result: {}", rectangle.can_hold(&rectangle2));
+}
+```
+
+从属于 struct 的还有一个关联函数，通过函数这个名字知道他无需传入 `&self`，等同于 Java 的静态方法，一般用作构造器
+
+```rust
+fn square(size: u32) -> Rectangle {
+  Rectangle {width: size, height: size}
+}
+```
 
 
 

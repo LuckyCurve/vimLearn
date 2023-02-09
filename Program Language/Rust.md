@@ -447,6 +447,43 @@ fn square(size: u32) -> Rectangle {
 
 
 
+## 枚举与模式匹配
+
+简单的枚举处理：
+
+```rust
+#[derive(Debug)]
+enum IpAddress {
+    IP_V4(String),
+    IP_V6(String)
+}
+
+fn main() {
+    let ip_enum = IpAddress::IP_V4(String::from("123"));
+    println!("IpAddress : {:?}", ip_enum);
+}
+```
+
+`Option<T>`本质上也是一个枚举，其中包含：`NONE` 和 `Some`：
+
+```rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x { 
+        None => None,
+        Some(i) => Some(i + 1)
+    }   
+}
+
+fn main() {
+    let five = Some(5);
+    let six = plus_one(five);
+    println!("some: {:?}", six);
+}
+
+```
+
+
+
 
 
 

@@ -479,8 +479,40 @@ fn main() {
     let six = plus_one(five);
     println!("some: {:?}", six);
 }
-
 ```
+
+高级用法：
+
+```rust
+fn main() {
+    match_language_advance();
+    let some_u8_value = 0u8;
+    match some_u8_value {
+        1 => println!("{}", some_u8_value),
+        _ => ()
+    }
+}
+
+fn match_language_advance() {
+    let some = Some(1);
+  	// if let 等价于 match case else execute ()
+    if let Some(i) = some {
+        println!("{}", i);
+    }
+}
+
+// equals to below
+fn match_language_advance() {
+    let some = Some(1);
+    if let Some(2) = some {
+        println!("{}", 2);
+    } else {
+        println!("{}", 333)
+    }
+}
+```
+
+
 
 
 

@@ -514,6 +514,225 @@ fn match_language_advance() {
 
 
 
+## 使用包、单元包及模块来管理日渐复杂的项目
+
+一个包（Package）可以拥有多个二进制单元包及一个可选的库单元包，还可以将部分代码拆到独立的单元包（Crate）当中。
+
+概念说明：
+
+* 包（Package）：一个用于构建、测试并分享单元包的 Cargo 功能
+* 单元包（Crate）：一个用于生成库或可执行文件的树形模块结构
+* 模块（Module）及 use 关键字：控制文件结构，作用域及路径的私有性
+* 路径（Path）：一种用于命名条目的方法，这些条目包括：结构体、函数和模块等
+
+Package 是由一个或多个提供相关功能的单元包集合而成
+
+执行 `cargo new` 完成包的创建，默认仅存在 `main.rs` 二进制单元包的根结点，可以手动创建 `lib.rs` 会被视作当前包的库单元包的根结点，可以在路径：`src/bin` 下创建多个源文件来创建更多的二进制单元包（Cargo）
+
+默认的访问级别都是私有的
+
+```rust
+// soame level node, so it no need to mark pub
+mod fornt_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+  	// in same file wu also need mark mod and func as public
+  	// path from current file 
+    fornt_of_house::hosting::add_to_waitlist();
+}
+```
+
+需要根据模块路径来完成方法调用，可以使用绝对路径从 `cargo` 根目录来查找，也可以使用相对路径从当前的文件开始查找，可以使用关键字 `super` 逆向查找 parent module，也可以使用 `::` 完成 child module 查找。
+
+结构体声明为 `pub`，所有字段仍然默认是私有的，含有私有字段的结构体需要一个关联构造函数来完成构造。
+
+枚举声明为 `pub`，则其中所有字段默认为 `pub`
+
+
+
+## 通用集合类型
+
+数据的大小在编译期间不确定，并且随着程序的按需扩大或缩小数据占用的空间。
+
+* 动态数组（Vector）
+* 字符串（String）
+* 哈希映射（HashMap）
+
+Vector 使用：
+
+```rust
+fn main() {
+    let create_vec_default: Vec<i32> = Vec::new();
+    let mut create_vec_with_init_value = vec![1, 2, 3];
+    create_vec_with_init_value.push(3);
+
+    println!("{:?}", create_vec_with_init_value);
+
+    // get element from index
+    let index2 = &create_vec_with_init_value[1];
+    println!("{}",index2);
+
+    // get element from get func
+    let index2_from_func_get = create_vec_with_init_value.get(9);
+    if let Some(i) = index2_from_func_get {
+        println!("{}", i);
+    } else {
+        println!("nothing in index 1");
+    }
+
+    // print all elements in vector
+    for element in create_vec_with_init_value{
+        println!("{}", element);
+    }
+}
+```
+
+String 使用：
+
+```rust
+use std::fmt::format;
+
+fn main() {
+    let source_string = "init contents";
+    
+    // equals
+    let mut s = source_string.to_string();
+    let s_equals = String::from(source_string);
+    
+    // add contents to string
+    s.push_str("append");
+
+    let param1 = "hello_".to_string();
+    let param2 = "world".to_string();
+    // paran1 owner transfer，param2 still get the owner
+    let result = param1 + &param2;
+    println!("result: {}", result);
+
+    // format string replace with add operation
+    let format_string = format!("{} - {}", "hello", "world");
+    println!("format string is {}", format_string);
+
+    // iterate all element in string
+    let string_get_all_element = "abc";
+    // byte level
+    for byte in string_get_all_element.bytes() {
+        println!("byte: {}", byte);
+    }
+
+    // char level
+    for char in string_get_all_element.chars() {
+        println!("char: {}", char);
+    }
+}
+```
+
+Map 用法：
+
+```rust
+use std::{collections::HashMap, fmt::format};
+
+fn main() {
+    word_calculate();
+}
+
+fn string_operate() {
+    let source_string = "init contents";
+
+    // equals
+    let mut s = source_string.to_string();
+    let s_equals = String::from(source_string);
+
+    // add contents to string
+    s.push_str("append");
+
+    let param1 = "hello_".to_string();
+    let param2 = "world".to_string();
+    // paran1 owner transfer，param2 still get the owner
+    let result = param1 + &param2;
+    println!("result: {}", result);
+
+    // format string replace with add operation
+    let format_string = format!("{} - {}", "hello", "world");
+    println!("format string is {}", format_string);
+
+    // iterate all element in string
+    let string_get_all_element = "abc";
+    // byte level
+    for byte in string_get_all_element.bytes() {
+        println!("byte: {}", byte);
+    }
+
+    // char level
+    for char in string_get_all_element.chars() {
+        println!("char: {}", char);
+    }
+}
+
+fn hash_map_operate() {
+    // base create HashMap
+    let mut map = HashMap::new();
+
+    map.insert("key".to_string(), 1);
+
+    // advanced create HashMap
+    let team_name = vec!["bule", "yellow"];
+    let team_source = vec![10, 50];
+    // through Vector index to create HashMap
+    let team: HashMap<_, _> = team_name.iter().zip(team_source.iter()).collect();
+    println!("{:?}", team);
+
+    let mut map = HashMap::new();
+    // owner transfer
+    map.insert("key1".to_string(), 1);
+    map.insert("key2".to_string(), 2);
+
+    println!("{:?}", map.get("key1"));
+
+    // iterate all element in map
+    for (key, value) in &map {
+        println!("key: {}", key);
+        println!("value: {}", value);
+    }
+
+    // replace old value: direct insert
+    map.insert("key1".to_string(), 111);
+    println!("key1: {:?}", map.get("key1"));
+    
+    // insert map if key is not exist
+    map.entry("key1".to_string()).or_insert(1);
+    println!("key1: {:?}", map.get("key1"));
+
+    // operate exist value
+    let value = map.entry("key1".to_string()).or_insert(1);
+    *value += 1;
+    println!("{:?}", map.get("key1"));
+}
+
+fn word_calculate() {
+    let mut map = HashMap::new();
+    let words = "hello world hello java hello rust hello cpp";
+
+    for word in words.split_whitespace() {
+        let count = map.entry(word).or_insert(0);
+        *count += 1;
+    }
+
+    println!("{:?}", map);
+}
+```
+
+
+
+
+
+
+
+
+
 
 
 

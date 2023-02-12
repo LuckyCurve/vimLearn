@@ -727,9 +727,128 @@ fn word_calculate() {
 
 
 
+## 错误处理
 
+```rust
+use core::panic;
 
+fn main() {
+    // automic panic
+    let vec = vec!(1, 2, 3);
+    println!("{}", vec[11]);
 
+    // manual panic
+    panic!("crash and burn!");
+}
+
+```
+
+通过 `panic!` 宏的方式来完成**不可恢复错误**的抛出
+
+当前抛出信息：
+
+```
+thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 11', src/main.rs:6:20
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/std/src/panicking.rs:575:5
+   1: core::panicking::panic_fmt
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/core/src/panicking.rs:64:14
+   2: core::panicking::panic_bounds_check
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/core/src/panicking.rs:147:5
+   3: <usize as core::slice::index::SliceIndex<[T]>>::index
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/core/src/slice/index.rs:260:10
+   4: core::slice::index::<impl core::ops::index::Index<I> for [T]>::index
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/core/src/slice/index.rs:18:9
+   5: <alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/alloc/src/vec/mod.rs:2727:9
+   6: error_handle::main
+             at ./src/main.rs:6:20
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/fc594f15669680fa70d255faec3ca3fb507c3405/library/core/src/ops/function.rs:507:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+```
+
+**可恢复错误**与 Result
+
+```rust
+// for using ? operate
+fn main() -> Result<(), Box<dyn Error>> {
+    let string = fs::read_to_string("hello.txt")?;
+    println!("{}", string);
+
+    Ok(())
+}
+
+fn result_operate() {
+    let file = File::open("hello.txt");
+
+    let file = match file {
+        Ok(actual_file) => actual_file,
+        Err(error_message) => {
+            panic!("while open file occur error: {:?}", error_message);
+        }
+    };
+}
+
+fn result_operate_simple() {
+    // unwrap func get value from Result if exist or execute panic!
+    let file = File::open("hello.txt").unwrap();
+
+    let get_file_advance = File::open("hello.txt").expect("get file hello.txt get an error");
+}
+
+fn result_operate_advance() {
+    let file = File::open("hello.txt");
+
+    let file = match file {
+        Ok(actual_file) => actual_file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create("hello.txt") {
+                Ok(fc) => fc,
+                Err(create_error) => panic!("create file error: {:?}", create_error),
+            },
+            other_error => panic!(
+                "there was an error occur when open a file, error: {:?}",
+                other_error
+            ),
+        },
+    };
+}
+
+fn read_username_from_file() -> Result<String, std::io::Error> {
+    let file = File::open("hello.txt");
+    let mut file = match file {
+        Ok(f) => f,
+        Err(error) => return Err(error)
+    };
+
+    let mut string = String::new();
+    match file.read_to_string(&mut string){
+        Ok(_) => Ok(string),
+        Err(e) => Err(e)
+    }
+}
+
+fn read_username_from_file_streamline() -> Result<String, io::Error> {
+    // ? operate ---- if (ok) => get value and goon else return Error
+    // limit condition: only work on func that return Result
+    let mut file = File::open("hello.txt")?;
+    let mut string = String::new();
+    file.read_to_string(&mut string)?;
+    Ok(string)
+}
+
+fn read_username_from_file_streamline_chain_call() -> Result<String, io::Error> {
+    let mut string = String::new();
+    File::open("hello.txt")?.read_to_string(&mut string)?;
+
+    Ok(string)
+
+    // all euqlas to 
+    // fs::read_to_string("hello.txt")
+}
+```
 
 
 

@@ -852,7 +852,100 @@ fn read_username_from_file_streamline_chain_call() -> Result<String, io::Error> 
 
 
 
+## 泛型、trait与生命周期
 
+泛型（Generics）是具体类型的抽象替代。
+
+```rust
+struct Point<T> {
+    x: T,
+    y: T
+}
+
+struct AdvancedPoint<U, T> {
+    x: U,
+    y: T
+}
+
+enum AdvancedResult<R, E, T> {
+    Result(R),
+    Exception(E),
+    Transfer(T)
+}
+
+// specify generics can add method to specifical object
+impl<R, E, T> AdvancedResult<R, E, T> {
+    fn object_method(&self, array1: &T) {
+        
+    }
+}
+
+fn main() {
+}
+
+fn find_max_value<T>(list: &[T]) -> T{
+    let mut max = list[0];
+
+    for &item in list.iter() {
+        if (item > max) {
+            max = item;
+        }
+    }
+
+    max
+}
+```
+
+
+
+trait 与其他语言当中接口的概念类似，但也不尽相同，需要保证 `trait` 和类型至少有一个在当前库中，否则会报错，这就是孤儿规则，避免别人引用了你的库时，是用了trait，而你自己原来也会这个类型使用了trait，编译器不知道要使用哪一个实现
+
+```rust
+use std::{fmt::Display, iter::Sum};
+
+pub trait Summary {
+    fn summarize(&self) -> String;
+    fn summarize_default(&self) -> String {
+        "summarize default method return".to_string()
+    }
+}
+
+pub struct NewsArticles {
+    pub headline: String,
+    pub auther: String,
+}
+
+pub fn notify(item: impl Summary) {
+    print!("result: {}", item.summarize());
+}
+
+pub fn notify_another<T: Summary>(array1: T, array2: T) {}
+
+pub fn notify_with_multi_trait(item: impl Summary + Display) {}
+
+pub fn notify_with_multi_trait_another<T: Summary + Display>(array1: T, array2: T) {}
+
+pub fn notify_with_multi_trait_another_where_enhance<T>(array1: T, array2: T)
+where
+    T: Summary + Display,
+{
+}
+
+impl Summary for NewsArticles {
+    fn summarize(&self) -> String {
+        format!("{}, by {}", self.headline, self.auther)
+    }
+}
+
+fn main() {
+    let article = NewsArticles {
+        headline: "headline".to_string(),
+        auther: "auther".to_string(),
+    };
+    print!("{}", article.summarize());
+}
+
+```
 
 
 

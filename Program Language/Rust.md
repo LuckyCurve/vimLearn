@@ -915,6 +915,12 @@ pub struct NewsArticles {
     pub auther: String,
 }
 
+impl Summary for NewsArticles {
+    fn summarize(&self) -> String {
+        format!("{}, by {}", self.headline, self.auther)
+    }
+}
+
 pub fn notify(item: impl Summary) {
     print!("result: {}", item.summarize());
 }
@@ -931,9 +937,12 @@ where
 {
 }
 
-impl Summary for NewsArticles {
-    fn summarize(&self) -> String {
-        format!("{}, by {}", self.headline, self.auther)
+// 不支持返回类型不明确，如
+// if return A (implements trait) else return B (implements trait)
+pub fn return_value_implements_trait() -> impl Summary {
+    NewsArticles {
+        headline: "headline".to_string(),
+        auther: "author".to_string(),
     }
 }
 
@@ -946,6 +955,110 @@ fn main() {
 }
 
 ```
+
+trait best practice: 
+
+```rust
+fn get_largest_number<T>(list: &Vec<T>) -> &T
+where
+    T: PartialOrd,
+{
+    let mut max = &list[0];
+    for item in list.iter() {
+        if (item > max) {
+            max = item;
+        }
+    }
+
+    &max
+}
+
+fn main() {
+    let vector = &vec![1, 2, 3];
+    let largest = get_largest_number(vector);
+    println!("largest is : {}", largest);
+}
+```
+
+根据泛型实现的 trait 来决定是否存在一些方法：
+
+```rust
+struct Couple<K, V> {
+    x: K,
+    y: V,
+}
+
+impl<K, V> Couple<K, V> {
+    fn all_couple_have_method() {}
+}
+
+impl<K, V> Couple<K, V>
+where
+    K: Display,
+    V: PartialOrd,
+{
+    fn k_impl_display_and_v_impl_partialOrd_have_method() {
+        
+    }
+}
+```
+
+生命周期引发的问题（borrow生命周期远远大于当前变量的生命周期）：
+
+```rust
+fn main() {
+    let out_reference;
+    {
+        let inner_value = 1;
+        // 借用的生命周期可能要短于当前变量的生命周期
+        // 需要考虑被引用对象的生命周期是否小于引用者，即需要数据始终有效
+        out_reference = &inner_value;
+        // `inner_value` does not live long enough
+    }
+
+    println!("{}", out_reference);
+    // borrow later used here
+}
+
+```
+
+```rust
+// 两个字符串切面的存活时间，必须不短于给定的生命周期
+// 并未延长变量的生命周期，仅仅只是完成生命周期的声明，明确告知编译器当前变量的生命周期最少为 'a
+// rust 可以轻松完成函数体内部生命周期的判断，至于方法层级的调用，则需要我们自己指定
+fn longest_string<'a>(str1: &'a str, str2: &'a str) -> &'a str {
+    if (str1.len() > str2.len()) {
+        str1
+    } else {
+        str2
+    }
+}
+fn main() {
+    over_lifetime();
+}
+
+fn normal_lifetime() {
+    let longest_string = longest_string("test1", "testLongest");
+    println!("{}", longest_string);
+}
+
+// 超出生命周期的 Demo
+fn over_lifetime() {
+    let string1 = "hello".to_string();
+    let result;
+    {
+        let string2 = "world1".to_string();
+        // error: `string2` does not live long enough
+        result = longest_string(string1.as_str(), string2.as_str());
+    }
+    println!("{}", result);
+}
+
+```
+
+出现生命周期的概念，是因为编译器无法确定对象的生命周期（特别是生命周期与多个入参其中的多个可能有关系时），此时需要我们明确指出当前对象返回值的生命周期与相关联入参的关系，如统一定义成 `'a`那么当外部实际进行方法调用时，就可以根据入参的最小生命周期来确定当前出参的生命周期。
+
+
 
 
 

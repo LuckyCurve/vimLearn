@@ -1058,7 +1058,101 @@ fn over_lifetime() {
 
 出现生命周期的概念，是因为编译器无法确定对象的生命周期（特别是生命周期与多个入参其中的多个可能有关系时），此时需要我们明确指出当前对象返回值的生命周期与相关联入参的关系，如统一定义成 `'a`那么当外部实际进行方法调用时，就可以根据入参的最小生命周期来确定当前出参的生命周期。
 
+生命周期默认的三条规则：
 
+* 编译器会自动给每个方法入参设置一个独立的生命周期
+* 当只存在一个入参时，当前方法出骖的生命周期默认和入参一致
+* 当方法入参存在 `&slef` 时，方法出参的生命周期和 `&slef` 保持一致
+
+
+
+## 编写自动化测试
+
+创建一个库项目会默认创建他的 `test` 测试模块
+
+```rust
+use core::panic;
+
+#[derive(Debug, PartialEq)]
+struct Rectangle {
+    length: u32,
+    width: u32,
+}
+
+impl Rectangle {
+    fn can_hold(&self, another: &Rectangle) -> bool {
+        self.length > another.length && self.width > another.width
+    }
+}
+
+struct Guess {
+    value: u32
+}
+
+impl Guess {
+    pub fn new(input: u32) -> Guess {
+        if input < 1 || input > 100 {
+            panic!("current input ileagel! input: {}", input);
+        }
+
+        Guess{value: input}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_can_hold_rectangle() {
+        let larger = Rectangle {
+            length: 5,
+            width: 5,
+        };
+        let smaller = Rectangle {
+            length: 1,
+            width: 1,
+        };
+
+        assert!(larger.can_hold(&smaller));
+    }
+
+    #[test]
+    fn test_can_not_hold_rectangle() {
+        let larger = Rectangle {
+            length: 5,
+            width: 5,
+        };
+        let equals_rectangle = Rectangle {
+            length: 5,
+            width: 5,
+        };
+
+        assert!(!larger.can_hold(&equals_rectangle));
+    }
+
+    #[test]
+    fn test_equals() {
+        let rectangle1 = Rectangle {
+            length: 1,
+            width: 1,
+        };
+        let rectangle2 = Rectangle {
+            length: 1,
+            width: 1,
+        };
+        assert_eq!(rectangle1, rectangle2);
+    }
+
+    #[test]
+    #[should_panic(expected = "current input ileagel! input: 0")]
+    fn tetst_should_panic_function() {
+        let guess = Guess::new(0);
+        println!("guess number: {}", guess.value);
+    }
+}
+
+```
 
 
 

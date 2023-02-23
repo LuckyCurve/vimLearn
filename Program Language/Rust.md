@@ -1070,6 +1070,15 @@ fn over_lifetime() {
 
 创建一个库项目会默认创建他的 `test` 测试模块
 
+`cargo test` 当中几个有用的参数：
+
+* `--test-threads=1` 设置线程数量
+* `--nocapture` 显示输出【默认只会显示执行失败的输出】
+* `cargo test [optional]` 会执行包含关键词 [optional] 的方法
+* `--ignored` 来指定单独运行这些被忽视的测试
+
+**Rust允许直接测试私有函数**
+
 ```rust
 use core::panic;
 

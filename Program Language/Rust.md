@@ -1165,5 +1165,150 @@ mod tests {
 
 
 
+## IO项目
+
+项目的组织逻辑是：
+
+```
+src
+----main.rs 其中包含简单的参数解析，准备其他配置，调用 lib.rs 当中的 run 方法，处理 run 函数当中可能出现的错误
+----lib.rs 主体业务逻辑，入口函数名为 run
+```
+
+main.rs：
+
+```rust
+use std::{env, process};
+
+use minigrep::CommandInput;
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    let command_input = CommandInput::new(&args).unwrap_or_else(|err| {
+        // 立即退出，并将错误码返还给用户
+        eprintln!("Problem parsing arguments: {}", err);
+        process::exit(1);
+    });
+
+    if let Err(e) = minigrep::run(command_input) {
+        eprintln!("Application Error: {}", e);
+        process::exit(1);
+    }
+}
+```
+
+lib.rs：
+
+```rust
+use std::{env, error::Error, fs, process};
+
+#[derive(Debug)]
+pub struct CommandInput {
+    query: String,
+    filename: String,
+    case_sensitive: bool,
+}
+
+impl CommandInput {
+    pub fn new(args: &[String]) -> Result<CommandInput, &'static str> {
+        if args.len() < 3 {
+            return Err("not enough arguments!");
+        }
+
+        let query = args[1].clone();
+        let filename = args[2].clone();
+
+        // 当前环境变量是否有被设置，没有被设置会 true
+        let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+
+        return Ok(CommandInput {
+            query,
+            filename,
+            case_sensitive,
+        });
+    }
+}
+
+// 主体逻辑，完成 文件读取-匹配 等操作
+pub fn run(command: CommandInput) -> Result<(), Box<dyn Error>> {
+    let contents = fs::read_to_string(&command.filename)?;
+
+    let result = if command.case_sensitive {
+        search_case_sensitive(&command.query, &contents)
+    } else {
+        search_case_insensitive(&command.query, &contents)
+    };
+
+    for line in result {
+        println!("{}", line);
+    }
+
+    Ok(())
+}
+
+pub fn search_case_sensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut result: Vec<&str> = vec![];
+    for item in contents.lines() {
+        if item.contains(query) {
+            result.push(item);
+        }
+    }
+
+    result
+}
+
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let query = query.to_lowercase();
+
+    let mut result = Vec::new();
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&query) {
+            result.push(line);
+        }
+    }
+
+    return result;
+}
+
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use crate::{search_case_insensitive, search_case_sensitive};
+
+    #[test]
+    fn case_sensitive() {
+        let query = "duct";
+        let contents = "
+Rust: 
+safe, fast, productive.
+Pick three.";
+        assert_eq!(
+            vec!["safe, fast, productive."],
+            search_case_sensitive(query, contents)
+        );
+    }
+
+    #[test]
+    fn case_insensitive() {
+        let query = "rUst";
+        let contents = "
+Rust: 
+safe, fast, productive.
+Pick three.
+Trust me.";
+
+        assert_eq!(
+            vec!["Rust: ", "Trust me."],
+            search_case_insensitive(query, contents)
+        );
+    }
+}
+
+```
+
+
+
 
 

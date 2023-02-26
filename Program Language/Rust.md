@@ -1310,5 +1310,38 @@ Trust me.";
 
 
 
+## 函数式编程特性：迭代器和闭包
+
+闭包（closure）基本用法
+
+```rust
+let closure = |arg1, arg2| {
+    arg1 + arg2
+}
+```
+
+基于迭代器进行上一章 search 逻辑的升级：
+
+```rust
+pub fn search_case_sensitive_function_style<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
+}
+
+pub fn search_case_insensitive_function_stype<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let query = query.to_lowercase();
+    contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query))
+        .collect()
+}
+```
+
+函数式编程提高性能和表达力。
+
+
+
 
 

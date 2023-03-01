@@ -1343,5 +1343,69 @@ pub fn search_case_insensitive_function_stype<'a>(query: &str, contents: &'a str
 
 
 
+## Cargo高级特性
+
+`cargo publish` 完成包到 `cargos.io` 的发布操作。
+
+`cargo install` 完成 `cargos.io` 当中的二进制包到本地的安装
+
+使用工作空间来完成多 `cargo` 相互依赖的管理，在根目录下的 `cargo.toml` 当中使用 `workplace` 标签来指定工作空间当中的模块信息：
+
+```toml
+[workspace]
+members = [
+    "adder",
+    "add-one"
+]
+```
+
+ 其中所有模块的依赖都统一管理在 `cargo.lock` 当中来，每个模块不会有自己的 `cargo.lock` 和 `target`，且模块与模块间相互独立，如果要发布，也需要分别分开来单独发布，如果需要相互引用，可以使用如下方式；
+
+```toml
+[package]
+name = "workplace_hello"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+add-one = {path = "../add-one"}
+```
+
+
+
+## 智能指针
+
+在所有权和借用概念的Rust当中 ，引用和智能指针之间还存在另一个差别：引用是只借用数据的指针，而与之相反的是，大多数智能指针本身就拥有指向它们的数据。
+
+`String` 和 `Vec<T>` 是智能指针，因为它们拥有一片内存区域并允许用户对其进行操作。
+
+通常会使用结构体来实现智能指针，但较之于平常的结构体，使用了 `Deref`（智能指针结构体的实例拥有和引用一致的行为） 和 `Drop`（自定义智能指针离开作用域时运行的代码） 这两个 `trait`，标准库当中最为常见的智能指针：
+
+`Box<T>`：可用于在堆上分配值
+
+常见实用环境：
+
+* 无法知道需要使用何种数据结构来承接【定义递归类型】
+* 需要传递大量基本数据的所有权，而不想进行复制行为
+* 希望拥有一个指向特定 `trait` 的类型值时
+
+`Rc<T>`：允许多重所有权的引用计数类型
+
+`Ref<T>` 和 `RefMut<T>`：一种可以在运行时而不是在编译时执行借用规则的类型
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

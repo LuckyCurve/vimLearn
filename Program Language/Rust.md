@@ -1381,7 +1381,7 @@ add-one = {path = "../add-one"}
 
 `String` 和 `Vec<T>` 是智能指针，因为它们拥有一片内存区域并允许用户对其进行操作。
 
-通常会使用结构体来实现智能指针，但较之于平常的结构体，使用了 `Deref`（智能指针结构体的实例拥有和引用一致的行为） 和 `Drop`（自定义智能指针离开作用域时运行的代码） 这两个 `trait`，标准库当中最为常见的智能指针：
+通常会使用结构体来实现智能指针，但较之于平常的结构体，使用了 `Deref`（智能指针结构体的实例拥有和引用一致的行为，自动解引用） 和 `Drop`（自定义智能指针离开作用域时运行的代码） 这两个 `trait`，标准库当中最为常见的智能指针：
 
 `Box<T>`：可用于在堆上分配值
 
@@ -1390,6 +1390,28 @@ add-one = {path = "../add-one"}
 * 无法知道需要使用何种数据结构来承接【定义递归类型】
 * 需要传递大量基本数据的所有权，而不想进行复制行为
 * 希望拥有一个指向特定 `trait` 的类型值时
+
+```rust
+use smart_pointer_hello::List::{Cons, Nil};
+
+fn main() {
+    // 测试递归
+    let linked_list = Cons(1, Box::new(Cons(2, Box::new(Nil))));
+    println!("{:?}", linked_list);
+
+    // 测试自动解引用
+    let boxed_variables = Box::new(123);
+    println!("{}", boxed_variables);
+}
+```
+
+```rust
+#[derive(Debug)]
+pub enum List<T> {
+    Cons(T, Box<List<T>>),
+    Nil
+}
+```
 
 `Rc<T>`：允许多重所有权的引用计数类型
 

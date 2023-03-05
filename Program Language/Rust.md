@@ -1399,7 +1399,8 @@ fn main() {
     let linked_list = Cons(1, Box::new(Cons(2, Box::new(Nil))));
     println!("{:?}", linked_list);
 
-    // 测试自动解引用
+    // 测试自动解引用！error
+    // 这里没有自动解引用，仅仅只是打印时候的字符串与直接打印的一致，使用 assert_eq! 函数后发现报错，无法直接匹配
     let boxed_variables = Box::new(123);
     println!("{}", boxed_variables);
 }
@@ -1412,6 +1413,78 @@ pub enum List<T> {
     Nil
 }
 ```
+
+常见使用方法：
+
+```rust
+fn box_operate() {
+    let boxed_value = Box::new(4);
+	// 解引用
+    assert_eq!(*boxed_value, 4);
+}
+```
+
+`Deref` 和 `Drop` 的实际直观使用：
+
+```rust
+use std::fmt::{Debug, Display, Formatter, Pointer};
+use std::ops::Deref;
+use std::panic::set_hook;
+use std::thread::sleep;
+
+#[derive(Debug)]
+struct MyBox<T> where T: Debug {
+    value: T,
+}
+
+impl<T> MyBox<T> where T: Debug {
+    pub fn new(value: T) -> MyBox<T> {
+        MyBox { value }
+    }
+}
+
+fn test_func(value: &i32) {
+    println!("{}", value);
+    assert_eq!(*value, 4)
+}
+
+impl<T> Deref for MyBox<T> where T: Debug {
+    type Target = T;
+
+    // actually * operation execute this function
+    // just return inner value reference
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<T> Drop for MyBox<T> where T: Debug {
+    fn drop(&mut self) {
+        println!("drop method execute! value: {:?}", *self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::my_box::{MyBox, test_func};
+
+    #[test]
+    fn test_base_operate() {
+        let boxed_value = MyBox::new(4);
+
+        assert_eq!(4, *boxed_value);
+    }
+
+    #[test]
+    fn test_auto_exchange() {
+        let value =
+            MyBox::new(4);
+        test_func(&value);
+    }
+}
+```
+
+
 
 `Rc<T>`：允许多重所有权的引用计数类型
 

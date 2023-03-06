@@ -1541,9 +1541,101 @@ mod tests {
 }
 ```
 
+`Ref<T>` 和 `RefMut<T>`：一种可以在运行时而不是在编译时执行借用规则的类型，因此即使引用本身是不可变的，我们仍然能够改变其中存储的值
 
+> 借用规则：
+>
+> * 在任意给定的时间里，要么只拥有一个可变引用，要么只能拥有任意数量的不可变引用
+> * 引用总是有效的
+>
+> 推论：无法可变的借用一个不可变的值
 
-`Ref<T>` 和 `RefMut<T>`：一种可以在运行时而不是在编译时执行借用规则的类型
+对于使用 `RefCell<T>` 的代码，Rust 只会（也应该是只能）在运行时检查这些规则，并当违反这些规则的时候出发 `panic` 来提前终止程序
+
+因此 `RefCell` 是为了满足某些特定的无法通过编译时检查的内存安全场景，Rust 的编译器是较为保守的，需要守住安全的底线，而如果某些代码开发者可以保证借用规则都满足的情况下却无法通过编译器。
+
+```rust
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn common_test() {
+        let x = 5;
+        // can't get mutable reference from immutable value
+        // error: Cannot borrow immutable local variable `x` as mutable
+        let y = &mut x;
+    }
+}
+```
+
+使用 `RefCell` 的一个Demo：
+
+```rust
+pub trait Messenger {
+    fn send(&self, content: &str);
+}
+
+pub struct TraceLimiter<'a, T: Messenger + 'a> {
+    // define value reference lifetime
+    messenger: &'a T,
+    value: usize,
+    max: usize,
+}
+
+impl<'a, T: Messenger> TraceLimiter<'a, T> {
+    pub fn new(messenger: &T , max: usize) -> TraceLimiter<T> {
+        TraceLimiter {
+            messenger,
+            value: 0,
+            max,
+        }
+    }
+
+    pub fn set_value(&mut self, value: usize) {
+        // make self mutable to change field in it
+        self.value = value;
+
+        // todo message sender judge by max and value
+        self.messenger.send("123");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use crate::{Messenger, TraceLimiter};
+
+    struct MockMessenger {
+        send_message: RefCell<Vec<String>>
+    }
+
+    impl MockMessenger {
+        fn new() -> MockMessenger {
+            MockMessenger{
+                send_message: RefCell::new(vec![])
+            }
+        }
+    }
+
+    impl Messenger for MockMessenger {
+        fn send(&self, content: &str) {
+            // error: borrow immutable reference to mutable reference
+            // this place should let function first arguments mutable, but if let first arguments mutable, immutable can't borrow mutable reference, it will occurs error in build
+            // so use RefCell trait to box it
+            self.send_message.borrow_mut().push(content.to_string())
+        }
+    }
+
+    #[test]
+    fn test() {
+        let mock_messenger = MockMessenger::new();
+        let mut trace_limiter = TraceLimiter::new(&mock_messenger, 10);
+        trace_limiter.set_value(12);
+
+        assert_eq!(mock_messenger.send_message.borrow().len(), 1);
+    }
+}
+```
 
 
 

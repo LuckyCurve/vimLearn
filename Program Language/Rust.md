@@ -1488,6 +1488,61 @@ mod tests {
 
 `Rc<T>`：允许多重所有权的引用计数类型
 
+如果不使用智能指针：
+
+```rust
+pub enum List {
+    // define construct function
+    Cons(i32, Box<List>),
+    // define null
+    Nil
+}
+
+#[cfg(test)]
+mod tests {
+    use super::List::*;
+
+    #[test]
+    fn test() {
+        let public_list = Box::new(Cons(12, Box::new(Nil)));
+
+        let handle_public_one = Cons(12, public_list);
+        // error: move occurs because `public_list` has type `Box<List>`, which does not implement the `Copy` trait
+        let handle_public_two = Cons(12, public_list);
+    }
+}
+```
+
+改进后：
+
+```rust
+use std::rc::Rc;
+
+pub enum List {
+    // define construct function
+    Cons(i32, Rc<List>),
+    // define null
+    Nil,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+    use super::List::*;
+
+    #[test]
+    fn test() {
+        let public_list = Rc::new(Cons(12,Rc::new(Nil)));
+
+        let handle_public_one = Cons(12, Rc::clone(&public_list));
+        // error: move occurs because `public_list` has type `Box<List>`, which does not implement the `Copy` trait
+        let handle_public_two = Cons(12, Rc::clone(&public_list));
+    }
+}
+```
+
+
+
 `Ref<T>` 和 `RefMut<T>`：一种可以在运行时而不是在编译时执行借用规则的类型
 
 

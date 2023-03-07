@@ -1637,6 +1637,94 @@ mod tests {
 }
 ```
 
+关于循环引用的问题：
+
+```rust
+use std::cell::RefCell;
+use std::io::Take;
+use std::rc::{Rc, Weak};
+use crate::List::Cons;
+
+#[derive(Debug)]
+pub enum List<T> {
+    Cons(T, RefCell<Rc<List<T>>>),
+    Nil,
+}
+
+impl<T> List<T> {
+    fn find_next(&self) -> Option<&RefCell<Rc<List<T>>>> {
+        match self {
+            Cons(_, item) => Some(item),
+            Nil => None
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TreeNode<T> {
+    value: T,
+    parent: RefCell<Weak<TreeNode<T>>>,
+    children: RefCell<Vec<Rc<TreeNode<T>>>>
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::cell::{Ref, RefCell};
+    use std::ops::Deref;
+    use std::rc::{Rc, Weak};
+    use crate::List::{Cons, Nil};
+    use crate::TreeNode;
+
+    #[test]
+    // 循环引用问题
+    fn build_recycle_list() {
+        let first_node = Rc::new(Cons(1, RefCell::new(Rc::new(Nil))));
+        let next_node = Cons(2, RefCell::new(Rc::clone(&first_node)));
+
+        if let Some(link) = first_node.find_next() {
+            *link.borrow_mut() = Rc::new(next_node);
+        }
+
+        // 十分少见，直接报错
+        // println!("{:?}", first_node);
+    }
+
+    // 解除循环引用方法：Weak智能指针
+    #[test]
+    fn build_a_plain_tree() {
+        let leaf = Rc::new(TreeNode{
+            value: 1,
+            parent: RefCell::new(Weak::new()),
+            children: RefCell::new(vec![]),
+        });
+        println!("leaf strong reference: {}", Rc::strong_count(&leaf));
+        println!("leaf weak reference: {}", Rc::weak_count(&leaf));
+
+        let branch = Rc::new(TreeNode{
+            value: 0,
+            parent: RefCell::new(Weak::new()),
+            children: RefCell::new(vec![Rc::clone(&leaf)]),
+        });
+
+        println!("branch strong reference: {}", Rc::strong_count(&branch));
+        println!("branch weak reference: {}", Rc::weak_count(&branch));
+
+        *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+
+        println!("branch strong reference: {}", Rc::strong_count(&branch));
+        println!("branch weak reference: {}", Rc::weak_count(&branch));
+
+        println!("leaf strong reference: {}", Rc::strong_count(&leaf));
+        println!("leaf weak reference: {}", Rc::weak_count(&leaf));
+
+        println!("branch: {:?}", branch);
+        println!("leaf parent info: {:?}", leaf.parent.borrow().upgrade());
+    }
+}
+
+```
+
 
 
 

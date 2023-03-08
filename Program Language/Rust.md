@@ -1828,6 +1828,57 @@ fn multi_producer_case() {
 
 
 
+共享内存模型：需要使用互斥体（mutex）的方式来完成访问，在任何语言世界当中都必须使用 `try - finally` 代码块的方式来访问。
+
+正是由于互斥体较为难用，管道通信拥有许多拥护者，Rust 当中能保证加锁和解锁这两个步骤当中不会出现错误。
+
+```rust
+#[test]
+fn mutex_single_thread_use() {
+    // use Mutex to share over thread
+    let lock = Mutex::new(5);
+
+    // num is smart pointer which point this inner value
+    let mut num = lock.lock().unwrap();
+    // operate value in mutex
+    // Deref trait implement * operate get inner value
+    // Drop trait implement when lifetime is over it will unlock automatically
+    *num = 100;
+
+    // it will wait in this line, can't re-lock
+    // println!("{:?}", lock.lock().unwrap());
+    println!("{:?}", *num);
+}
+
+#[test]
+fn use_mutex_over_thread() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut vector = vec![];
+
+    for _ in 0..10 {
+        // use atomic reference counter to implement this logic
+        let counter = Arc::clone(&counter);
+        let join_handle = thread::spawn(move || {
+            let mut mutex_guard = counter.lock().unwrap();
+            *mutex_guard += 1;
+        });
+        vector.push(join_handle);
+    }
+
+    for item in vector {
+        item.join().unwrap();
+    }
+
+    println!("counter: {}", *(counter.lock().unwrap()));
+}
+```
+
+
+
+
+
+
+
 
 
 

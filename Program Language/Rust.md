@@ -1727,6 +1727,105 @@ mod tests {
 
 
 
+## 无畏并发
+
+对于任何高级语言而言，只支持全部解决方案的一部分是完全可以理解的设计策略，因为高级语言往往会通过放弃部分控制能力来获得**有益于用户的抽象**，而底层的语言则期望在任何场景下都可以提供一套**新能最佳的解决方案**
+
+Rust 基础线程模型是 1 ：1 内核态线程，为了保证语言的运行时足够小，没有去维护 M：N
+
+```rust
+#[test]
+fn new_child_thread_and_execute_print_operate() {
+    // child execute logic
+    let join_handle = thread::spawn(|| {
+        for i in 1..10 {
+            println!("Child Thread Process {}", i);
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+
+    // main thread execute logic
+    for i in 1..5 {
+        println!("Parent Thread Process {}", i);
+        thread::sleep(Duration::from_secs(1));
+    }
+
+    // when main thread execute finished, process exit
+
+    // let main thread join when child thread execute finished
+    join_handle.join().unwrap();
+}
+
+#[test]
+fn variables_ownership_move_from_thread_to_another_thread() {
+    let vector = vec![1, 2, 3];
+
+    let join_handle = thread::spawn(move || {
+        println!("{:?}", vector);
+    });
+    // error: vector ownership has moved to child thread
+    // println!("{:?}", vector);
+    join_handle.join().unwrap();
+}
+
+```
+
+在线程间共享数据：不要通过共享内存来通信，而是通过通信来共享内存【通过通道来传递变量】
+
+```rust
+#[test]
+fn over_thread_value_share() {
+    // use channel to share variables
+    let (tx, rx) = mpsc::channel();
+
+    let join_handle = thread::spawn(move || {
+        tx.send(String::from("hello")).unwrap();
+    });
+
+    // 阻塞流程 不想阻塞可以使用try
+    let receiver = rx.recv().unwrap();
+    println!("{}", receiver);
+
+    join_handle.join().unwrap();
+}
+```
+
+多个生产者的情况：
+
+```rust
+#[test]
+fn multi_producer_case() {
+    let (tx, rx) = mpsc::channel();
+
+    let tx_one = mpsc::Sender::clone(&tx);
+    thread::spawn(move || {
+        let thread_prefix = "thread_one_prefix".to_string();
+
+        let vector = vec!["hello", "rust"];
+        for mut item in vector {
+            let mut temp_prefix = thread_prefix.clone();
+            temp_prefix.push_str(item);
+            tx_one.send(temp_prefix).unwrap();
+        }
+    });
+
+    thread::spawn(move || {
+        let thread_prefix = "thread_two_prefix".to_string();
+
+        let vector = vec!["hello", "rust"];
+        for mut item in vector {
+            let mut temp_prefix = thread_prefix.clone();
+            temp_prefix.push_str(item);
+            tx.send(temp_prefix).unwrap();
+        }
+    });
+
+    for item in rx {
+        println!("Get: {}", item);
+    }
+}
+```
+
 
 
 
